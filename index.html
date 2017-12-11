@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <title>OSS web直传</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+</head>
+
+<body>
+    <div id="container">
+        <button id="selectfiles">选择</button>
+        <button @click="selectFile">开始上传</button>
+
+        <hr>
+        <ul>
+            <li v-for="file in files">{{file}}</li>
+        </ul>
+    </div>
+    <script src="https://unpkg.com/vue@2.5.9/dist/vue.js"></script>
+    <script type="text/javascript" src="lib/base64.js"></script>
+    <script type="text/javascript" src="lib/crypto1/crypto/crypto.js"></script>
+    <script type="text/javascript" src="lib/crypto1/hmac/hmac.js"></script>
+    <script type="text/javascript" src="lib/crypto1/sha1/sha1.js"></script>
+    <script type="text/javascript" src="lib/plupload-2.1.2/js/plupload.full.min.js"></script>
+    <script>
+        new Vue({
+            el: '#container',
+            data() {
+                return {
+                    accessid: '6MKOqxGiGU4AUk44', //改成你自己的accessid
+                    accesskey: 'ufu7nS8kS59awNihtjSonMETLI0KLy', //改成你自己的accesskey
+                    host: 'http://post-test.oss-cn-hangzhou.aliyuncs.com', //改成你自己的host
+                    policyText: {
+                        "expiration": "2020-01-01T12:00:00.000Z", //设置该Policy的失效时间，超过这个失效时间之后，就没有办法通过这个policy上传文件了
+                        "conditions": [
+                            ["content-length-range", 0, 1048576000] // 设置上传文件的大小限制
+                        ]
+                    },
+                    signature: '',
+                    files: [],
+                    uploader: {}
+                }
+            },
+            mounted() {
+                const self = this;
+                var uploader = new plupload.Uploader({
+                    runtimes: 'html5,flash,silverlight,html4',
+                    browse_button: 'selectfiles',
+                    //multi_selection: false,
+                    container: document.getElementById('container'),
+                    flash_swf_url: 'lib/plupload-2.1.2/js/Moxie.swf',
+                    silverlight_xap_url: 'lib/plupload-2.1.2/js/Moxie.xap',
+                    url: 'http://oss.aliyuncs.com',
+
+                    init: {
+                        PostInit: function() {},
+
+                        FilesAdded: function(up, files) {
+                            self.files = files;
+                        },
+
+                        BeforeUpload: function(up, file) {
+                            self.set_upload_param(up, file.name, true);
+                            // 上传前
+                        },
+
+                        UploadProgress: function(up, file) {
+                            // 可以在此设置上传进度
+                        },
+
+                        FileUploaded: function(up, file, info) {
+                            // 上传成功之后，文件的url为: host + file.name
+                            if (info.status == 200) {
+                                alert('上传成功了')
+                            }
+                        },
+
+                        Error: function(up, err) {
+                            // 上传错误
+                        }
+                    }
+                });
+                self.uploader = uploader;
+                self.uploader.init();
+            },
+            methods: {
+                selectFile() {
+                    this.set_upload_param(this.uploader, '', false);
+                },
+                set_upload_param(up, filename, ret) {
+                    var policyBase64 = Base64.encode(JSON.stringify(this.policyText));
+                    var message = policyBase64;
+                    var bytes = Crypto.HMAC(Crypto.SHA1, message, this.accesskey, {
+                        asBytes: true
+                    });
+                    var signature = Crypto.util.bytesToBase64(bytes);
+                    var new_multipart_params = {
+                        'Filename': 'abc/' + filename,
+                        'key': filename,
+                        'policy': policyBase64,
+                        'OSSAccessKeyId': this.accessid,
+                        'success_action_status': '200', //让服务端返回200,不然，默认会返回204
+                        'signature': signature,
+                    };
+
+                    up.setOption({
+                        'url': this.host,
+                        'multipart_params': new_multipart_params
+                    });
+
+                    up.start();
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
