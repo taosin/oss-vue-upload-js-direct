@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <title>OSS web直传</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+</head>
+
+<body>
+    <div id="container">
+        <input type="file" @change="selectFile">
+        <button @click="doUpload">开始上传</button>
+        <hr>
+        <ul>
+            <li v-for="file in files">{{file}}</li>
+        </ul>
+    </div>
+    <script src="https://unpkg.com/vue@2.5.9/dist/vue.js"></script>
+    <script src="http://gosspublic.alicdn.com/aliyun-oss-sdk-4.3.0.min.js"></script>
+    <script>
+        new Vue({
+            el: '#container',
+            data() {
+                return {
+                    accessid: '6MKOqxGiGU4AUk44', //改成你自己的accessid
+                    accesskey: 'ufu7nS8kS59awNihtjSonMETLI0KLy', //改成你自己的accesskey
+                    host: 'http://post-test.oss-cn-hangzhou.aliyuncs.com', //改成你自己的host
+                    policyText: {
+                        "expiration": "2020-01-01T12:00:00.000Z", //设置该Policy的失效时间，超过这个失效时间之后，就没有办法通过这个policy上传文件了
+                        "conditions": [
+                            ["content-length-range", 0, 1048576000] // 设置上传文件的大小限制
+                        ]
+                    },
+                    signature: '',
+                    files: [],
+                    uploader: {},
+                    imgPath: ''
+                }
+            },
+            mounted() {
+                // this.selectFile()
+            },
+            methods: {
+                selectFile() {
+                    this.imgPath = event.currentTarget.value;
+                },
+                doUpload() {
+                    var client = new OSS.Wrapper({
+                        region: 'oss-cn-hangzhou',
+                        accessKeyId: '6MKOqxGiGU4AUk44',
+                        accessKeySecret: 'ufu7nS8kS59awNihtjSonMETLI0KLy',
+                        bucket: 'post-test'
+                    });
+                    client.put('object', this.imgPath).then(function(r1) {
+                        console.log('put success: %j', r1);
+                        return client.get('object');
+                    }).then(function(r2) {
+                        console.log('get success: %j', r2);
+                    }).catch(function(err) {
+                        debugger
+                    });
+                },
+            }
+        })
+    </script>
+</body>
+
+</html>
