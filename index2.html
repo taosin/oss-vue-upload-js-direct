@@ -50,7 +50,8 @@
                         region: 'oss-cn-hangzhou',
                         accessKeyId: '6MKOqxGiGU4AUk44',
                         accessKeySecret: 'ufu7nS8kS59awNihtjSonMETLI0KLy',
-                        bucket: 'post-test'
+                        bucket: 'post-test',
+                        stsToken: '2131321dadaddsadadda'
                     });
                     client.put('object', this.imgPath).then(function(r1) {
                         console.log('put success: %j', r1);
